@@ -55,10 +55,33 @@ public class DataBase {
     return fines;
   }
 
-  public Boolean saveFine(String description, String carNumber) {
+  public List<Type> getTypes() {
+    List<Type> types = new ArrayList<Type>();
+    try
+    {
+      String query = "SELECT * FROM Types";
+      Statement st = this.connection.createStatement();
+      ResultSet rs = st.executeQuery(query);
+      while (rs.next())
+      {
+        int id = rs.getInt("ID");
+        String title = rs.getString("Title");
+        Type x = new Type(id, title);
+        types.add(x);
+      }
+      st.close();
+    }
+    catch (SQLException e)
+    {
+      System.out.println(e);
+    }
+    return types;
+  }
+
+  public Boolean saveFine(String description, String carNumber, int typeId) {
     try {
       DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-      String query = "INSERT INTO Fines (FineDescription, CarNumber, DateOfFine) VALUES ('" + description + "', '" + carNumber + "', '" + java.time.LocalDate.now().format(formatter) + "');";
+      String query = "INSERT INTO Fines (FineDescription, CarNumber, DateOfFine, TypeId) VALUES ('" + description + "', '" + carNumber + "', '" + java.time.LocalDate.now().format(formatter) + "', '" + typeId + "');";
       Statement st = this.connection.createStatement();
       st.executeUpdate(query);
       st.close();

@@ -19,6 +19,8 @@ import javafx.scene.chart.XYChart;
 import javafx.util.Callback;
 import javafx.scene.control.TableColumn.*;
 import javafx.scene.control.cell.TextFieldTableCell;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 
 // If application cannot to connect to the DataBase
 // export CLASSPATH=$CLASSPATH:/usr/share/java/mysql-connector-java.jar
@@ -35,6 +37,7 @@ public class PavelKeyzikApplication extends Application {
   private TextField passwordInput;
   private Button saveTodo;
   private Button deleteTodo;
+  private int currentType;
   public TableView todosTable;
 
   @Override
@@ -49,6 +52,21 @@ public class PavelKeyzikApplication extends Application {
     db = new DataBase();
     Boolean connectedToDataBase = db.connect();
 
+
+    ComboBox<Type> typeComboBox = new ComboBox<Type>();
+    List<Type> types = db.getTypes();
+    for (Type temp : types) {
+      typeComboBox.getItems().add(temp);
+		}
+    // this.currentType = typeComboBox.getSelectionModel().selectFirst();
+    typeComboBox.valueProperty().addListener(new ChangeListener() {
+        @Override
+        public void changed(ObservableValue observable, Object oldValue, Object newValue) {
+          // this.currentType = ((Type) (observable.getValue())).ID()
+          // System.out.println();
+        }
+    });
+
     if(!connectedToDataBase) {
       System.out.println("====> Не могу подключиться к Базе Данных");
       window.close();
@@ -57,7 +75,7 @@ public class PavelKeyzikApplication extends Application {
 
     saveTodo = new Button("Save");
     saveTodo.setStyle("-fx-background-color: #1f3e15; -fx-color: #1f3e15");
-    saveTodo.setOnAction((ev) -> this.handleEvent(ev));
+    saveTodo.setOnAction((ev) -> this.handleEvent(ev, typeComboBox));
 
     deleteTodo = new Button("Delete");
     deleteTodo.setStyle("-fx-background-color: #1f3e15; -fx-color: #1f3e15");
@@ -121,8 +139,13 @@ public class PavelKeyzikApplication extends Application {
     deleteButtonLayout.getChildren().addAll(deleteTodo);
     deleteButtonLayout.setPadding(inputPadding);
 
+    HBox selectTypeLayout = new HBox();
+    selectTypeLayout.setAlignment(Pos.CENTER_RIGHT);
+    selectTypeLayout.getChildren().addAll(typeComboBox);
+    selectTypeLayout.setPadding(inputPadding);
+
     VBox layoutV = new VBox();
-    layoutV.getChildren().addAll(fineDescriptionLayout, carNumberLayout, saveButtonLayout, deleteButtonLayout);
+    layoutV.getChildren().addAll(fineDescriptionLayout, carNumberLayout, selectTypeLayout, saveButtonLayout, deleteButtonLayout);
 
     appPanel = new BorderPane();
     appPanel.setTop(layoutV);
@@ -140,7 +163,7 @@ public class PavelKeyzikApplication extends Application {
 
     VBox layout2 = new VBox();
     layout2.getChildren().addAll(loginInput, passwordInput, button2);
-    scene2 = new Scene(layout2, 600, 600);
+    scene2 = new Scene(layout2, 300, 300);
 
     window.setTitle("Hello World Application");
     window.setScene(scene2);
@@ -166,11 +189,12 @@ public class PavelKeyzikApplication extends Application {
     }
   }
 
-  public void handleEvent(ActionEvent ev) {
+  public void handleEvent(ActionEvent ev, ComboBox comboBox) {
+    int currentType = (((Type)comboBox.valueProperty().getValue()).ID());
     String description = this.fineDescriptionField.getText();
     String carNumber = this.carNumberField.getText();
 
-    if(this.db.saveFine(description, carNumber)) {
+    if(this.db.saveFine(description, carNumber, currentType)) {
       DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
       Fine temp = new Fine(1, description, carNumber, java.time.LocalDate.now().format(formatter));
       todosTable.getItems().add(temp);
@@ -178,9 +202,7 @@ public class PavelKeyzikApplication extends Application {
   }
 
   public void handleFineEdit(String type, CellEditEvent <Fine, String> event) {
-    // CellEditEvent <Fine, String> eventX = (CellEditEvent) event;
     String value = event.getNewValue() != null ? event.getNewValue() : event.getOldValue();
-    System.out.println(event.getTablePosition().getRow());
     Fine fine = ((Fine) event.getTableView().getItems()
       .get(event.getTablePosition().getRow()));
     switch (type) {
