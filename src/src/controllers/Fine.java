@@ -29,4 +29,16 @@ public class Fine {
   public String getDateOfFine() {
       return DateOfFine;
   }
+
+  public void setFineDescription(String fineDescription) {
+    this.FineDescription = fineDescription;
+  }
+
+  public void setCarNumber(String carNumber) {
+    this.CarNumber = carNumber;
+  }
+
+  public void setDateOfFine(String dateOfFine) {
+    this.DateOfFine = dateOfFine;
+  }
 }

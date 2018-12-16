@@ -11,6 +11,7 @@ public class DataBase {
   private String DB_USERNAME;
   private String DB_PASSWORD;
   private Connection connection;
+  private String INSERT_FINE = "UPDATE Fines SET FineDescription=?, CarNumber=?, DateOfFine=? WHERE id=?";
 
   public DataBase() {
     this.DB_USERNAME = "root";
@@ -61,6 +62,37 @@ public class DataBase {
       Statement st = this.connection.createStatement();
       st.executeUpdate(query);
       st.close();
+      return true;
+    }
+    catch (SQLException e) {
+      System.out.println(e);
+    }
+    return false;
+  }
+
+  public Boolean removeFine(int id) {
+    try {
+      String query = "DELETE FROM Fines WHERE id='" + id + "'";
+      Statement st = this.connection.createStatement();
+      st.executeUpdate(query);
+      st.close();
+      return true;
+    }
+    catch (SQLException e) {
+      System.out.println(e);
+    }
+    return false;
+  }
+
+  public Boolean updateFine(Fine fine) {
+    try {
+      PreparedStatement ps = connection.prepareStatement(INSERT_FINE);
+      ps.setString(1, fine.getFineDescription());
+      ps.setString(2, fine.getCarNumber());
+      ps.setString(3, fine.getDateOfFine());
+      ps.setInt(4, fine.ID());
+      ps.execute();
+      ps.close();
       return true;
     }
     catch (SQLException e) {

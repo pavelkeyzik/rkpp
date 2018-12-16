@@ -13,6 +13,12 @@ import javafx.stage.Stage;
 import java.util.List;
 import java.util.Date;
 import java.time.format.DateTimeFormatter;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.chart.XYChart;
+import javafx.util.Callback;
+import javafx.scene.control.TableColumn.*;
+import javafx.scene.control.cell.TextFieldTableCell;
 
 // If application cannot to connect to the DataBase
 // export CLASSPATH=$CLASSPATH:/usr/share/java/mysql-connector-java.jar
@@ -28,7 +34,8 @@ public class PavelKeyzikApplication extends Application {
   private TextField loginInput;
   private TextField passwordInput;
   private Button saveTodo;
-  private TableView todosTable;
+  private Button deleteTodo;
+  public TableView todosTable;
 
   @Override
   public void init() throws Exception {
@@ -52,18 +59,29 @@ public class PavelKeyzikApplication extends Application {
     saveTodo.setStyle("-fx-background-color: #1f3e15; -fx-color: #1f3e15");
     saveTodo.setOnAction((ev) -> this.handleEvent(ev));
 
+    deleteTodo = new Button("Delete");
+    deleteTodo.setStyle("-fx-background-color: #1f3e15; -fx-color: #1f3e15");
+    deleteTodo.setOnAction((ev) -> this.handleRemoveEvent(ev));
+
     todosTable = new TableView();
+    todosTable.setEditable(true);
     todosTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
     TableColumn todoText = new TableColumn("Fine description");
     todoText.setMinWidth(120);
     todoText.setCellValueFactory(new PropertyValueFactory<>("FineDescription"));
+    todoText.setCellFactory(TextFieldTableCell.forTableColumn());
+    todoText.setOnEditCommit(event -> this.handleFineEdit("todoText", (CellEditEvent <Fine, String>)(event)));
 
     TableColumn carNumber = new TableColumn("Car number");
     carNumber.setCellValueFactory(new PropertyValueFactory<>("CarNumber"));
+    carNumber.setCellFactory(TextFieldTableCell.forTableColumn());
+    carNumber.setOnEditCommit(event -> this.handleFineEdit("carNumber", (CellEditEvent <Fine, String>)(event)));
 
     TableColumn todoAddedDate = new TableColumn("Added date");
     todoAddedDate.setCellValueFactory(new PropertyValueFactory<>("DateOfFine"));
+    todoAddedDate.setCellFactory(TextFieldTableCell.forTableColumn());
+    todoAddedDate.setOnEditCommit(event -> this.handleFineEdit("todoAddedDate", (CellEditEvent <Fine, String>)(event)));
 
     todosTable.getColumns().addAll(todoText, carNumber, todoAddedDate);
 
@@ -98,8 +116,13 @@ public class PavelKeyzikApplication extends Application {
     saveButtonLayout.getChildren().addAll(saveTodo);
     saveButtonLayout.setPadding(inputPadding);
 
+    HBox deleteButtonLayout = new HBox();
+    deleteButtonLayout.setAlignment(Pos.CENTER_RIGHT);
+    deleteButtonLayout.getChildren().addAll(deleteTodo);
+    deleteButtonLayout.setPadding(inputPadding);
+
     VBox layoutV = new VBox();
-    layoutV.getChildren().addAll(fineDescriptionLayout, carNumberLayout, saveButtonLayout);
+    layoutV.getChildren().addAll(fineDescriptionLayout, carNumberLayout, saveButtonLayout, deleteButtonLayout);
 
     appPanel = new BorderPane();
     appPanel.setTop(layoutV);
@@ -140,9 +163,6 @@ public class PavelKeyzikApplication extends Application {
 
     if(this.db.login(login, password)) {
       this.window.setScene(this.scene);
-      // DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-      // Fine temp = new Fine(1, description, carNumber, java.time.LocalDate.now().format(formatter));
-      // todosTable.getItems().add(temp);
     }
   }
 
@@ -154,6 +174,36 @@ public class PavelKeyzikApplication extends Application {
       DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
       Fine temp = new Fine(1, description, carNumber, java.time.LocalDate.now().format(formatter));
       todosTable.getItems().add(temp);
+    }
+  }
+
+  public void handleFineEdit(String type, CellEditEvent <Fine, String> event) {
+    // CellEditEvent <Fine, String> eventX = (CellEditEvent) event;
+    String value = event.getNewValue() != null ? event.getNewValue() : event.getOldValue();
+    System.out.println(event.getTablePosition().getRow());
+    Fine fine = ((Fine) event.getTableView().getItems()
+      .get(event.getTablePosition().getRow()));
+    switch (type) {
+      case "todoText":
+        fine.setFineDescription(value);
+        break;
+      case "carNumber":
+        fine.setCarNumber(value);
+        break;
+      case "todoAddedDate":
+        fine.setDateOfFine(value);
+        break;
+    }
+    if (db.updateFine(fine)) {
+      todosTable.refresh();
+    }
+  }
+
+  public void handleRemoveEvent(ActionEvent ev) {
+    Fine selectedItem = (Fine)(todosTable.getSelectionModel().getSelectedItem());
+    int id = selectedItem.ID();
+    if(this.db.removeFine(id)) {
+      todosTable.getItems().remove(selectedItem);
     }
   }
 }
